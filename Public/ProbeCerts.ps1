@@ -31,7 +31,7 @@ function ProbeCerts {
         Write-Host "Using hosts defined in CLI"
         $hosts.Replace(" ","") -Split(",") | ForEach-Object {
             Write-Host "Probing Certificate: $_"
-            $allCerts.Add($(ProbeCert $_))
+            $allCerts.Add((Get-RemoteCertificate -Hostname $_))
         }
     } else {
         Write-Host "No hostname declared, using hostfile '$hostfile'"
@@ -39,7 +39,7 @@ function ProbeCerts {
             Get-Content -Path $hostfile | ForEach-Object {
                 $thisHost = $_ -replace '\s',''
                 Write-Host "Probing Certificate: $thisHost"
-                $allCerts.Add($(ProbeCert $thisHost))
+                $allCerts.Add((Get-RemoteCertificate -Hostname $thisHost))
             }
         } else {
             Write-Host "Error: `"$hostfile`" not found at $(Get-Location)"

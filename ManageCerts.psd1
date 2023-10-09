@@ -7,6 +7,6 @@
 
     FunctionsToExport = @(
         'CreateNewCsr'
-        'ProbeCerts'
+        'Get-RemoteCertificate'
     )
 }
