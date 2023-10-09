@@ -7,6 +7,6 @@
 
     FunctionsToExport = @(
         'New-CertificateSigningRequest'
-        'ProbeCerts'
+        'Get-RemoteCertificate'
     )
 }
