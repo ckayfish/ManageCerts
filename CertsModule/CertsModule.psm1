@@ -108,8 +108,8 @@ function ProbeCert{
  .Parameter sans
   Optional. Array of strings for each SAN.
  .Example
-   # Get the certificate hosted at the address github.com on port 443
-   ProbeCert -hostname github.com
+  # Get the certificate hosted at the address github.com on port 443
+  ProbeCert -hostname github.com
  .Example
    # Get the certificate hosted at mydomain.com on TCP 8443
    ProbeCert -hostname mydomain.com -port 8443

@@ -9,13 +9,13 @@
 #>
 
 param (
-    [string]$cn = '',                               # Common name/hostname
-    [string]$c = 'CA',                              # 2 letter country code
-    [string]$st = 'British Columbia',               # State/Province 
-    [string]$loc = 'Victoria',                      # Location (City)
-    [string]$org= 'Province of British Columbia',   # Organisation
-    [string]$sans = '',                             # CSV of Subject Alternate Names
-    [string]$csrDir = '.\csrsInProgress'            # Directory where generated CSRs and keys are stored
+    [string]$cn = '',               # Common name/hostname
+    [string]$c = '',                # 2 letter country code
+    [string]$st = '',               # State/Province 
+    [string]$loc = '',              # Location (City)
+    [string]$org= '',               # Organisation
+    [string]$sans = '',             # CSV of Subject Alternate Names
+    [string]$csrDir = '.\csrsInProgress' # Directory where generated CSRs and keys are stored
 )
 
 #Import modules, set path, initiate important objects
