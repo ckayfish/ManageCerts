@@ -1,0 +1,5 @@
+logs/
+hostfiles/
+csrsInProgress/
+*.key
+*.csr
