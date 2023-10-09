@@ -2,10 +2,26 @@ using namespace System.Management.Automation
 
 <#
 .SYNOPSIS
-Creates a CSR using OpenSSL.
+Creates a CSR and Private Ket for a new-new server certificate using OpenSSL.
 
 .DESCRIPTION
-Creates a Certificate Signing Request (CSR) using OpenSSL while absctracting how parameters are passed given various scenarios.
+This command will create a CSR and private key for the hostname (-cn) provided. It will use
+the default Country, State/Province, Location/City, and organization if not specified. The
+Subject Alternate Names (-SubjectAlternateName) can be passed as a comma-separated string
+
+```powershell
+-SubjectAlternateName "name1.alt.net, name2.alt.net"
+```
+
+or as an array of strings
+
+```powershell
+-SubjectAlternateName name1.alt.net, name2.alt.net
+```
+
+.EXAMPLE
+Create a new CSR for "mynewwebsite.com", outputting to the default directory "CSRsInProgress" at the root of the module.
+PS C:\> New-CertificateSigningRequest -CommonName mynewwebsite.com
 #>
 function New-CertificateSigningRequest {
     param (
@@ -22,11 +38,15 @@ function New-CertificateSigningRequest {
         # Array of Subject Alternate Names
         [Alias('SANs')][string[]]$SubjectAlternateName,
         # Output directory for key and cert files.
-        [ValidateNotNullOrEmpty()][string]$CSRDirectory = ".",
+        [ValidateNotNullOrEmpty()][string]$CSRDirectory = "$PSScriptRoot/../CSRsInProgress", # you may want to change this to just "./CSRsInProgress" and have it dump to a subdirectory of the working directory
         # Force generating new CSR files (deletes clobbered paths).
         [switch]$Force
     )
 
+    if($SubjectAlternateName.Count -eq 1 -and $SubjectAlternateName[0] -like '*,*'){
+        Write-Verbose "Splitting SubjectAlternateName (appears to be an array string)"
+        $SubjectAlternateName = $SubjectAlternateName -split ',' | ForEach-Object Trim | Where-Object { $_ }
+    }
     try {
         $OpenSSL = Get-Command -Name 'openssl.exe' -CommandType Application -ErrorAction Stop
         

@@ -6,7 +6,7 @@
     Description = 'SSL/TSL CSR generation'
 
     FunctionsToExport = @(
-        'CreateNewCsr'
-        'Get-RemoteCertificate'
+        'New-CertificateSigningRequest'
+        'ProbeCerts'
     )
 }
