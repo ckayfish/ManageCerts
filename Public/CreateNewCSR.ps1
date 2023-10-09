@@ -31,8 +31,16 @@ function CreateNewCSR {
             Write-Host "No SANs (alternate names) provided."
         }
         # Check function parameters in module file to ensure you are passing them the right order.
-        # Should be: Common Name, Country (2 letter code), State, Location, Organisation, and array of SAN's
-        CreateCsr $cn $c $st $loc $org $sansArray $csrDir
+        $Parameters = @{
+            CommonName = $cn
+            Country = $c
+            State = $st
+            Location = $loc
+            Organisation = $org
+            SubjectAlternateName = $sansArray
+            CSRDirectory = $csrDir
+        }
+        New-CertificateSigninfRequest @Parameters
     } else {
         Write-Host "-cn (Common Name) not defined. cn = '$cn'"
     }

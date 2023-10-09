@@ -60,9 +60,16 @@ function ProbeCerts {
             if (!($_.cn -eq $null)) {
                 if ((Get-Date).AddDays($daysleft) -gt $_.validTo  ) {
                     Write-Host "The certificate for $($_.cn) expires in $(($_.validTo - (Get-Date)).Days) days."
-                    # Check function parameters in module file to ensure you are passing in the right order
-                    # Should be: Common Name, Country (2 letter code), State, Location, Organisation, and array of SAN's
-                    CreateCsr $_.cn $_.subject.C  $_.subject.S $_.subject.L $($_.subject.O -replace ('"','\"')) $($_.sans) $csrDir
+                    $Parameters = @{
+                        CommonName = $_.CommonName
+                        Country = $_.Subject.C
+                        State = $_.Subject.S
+                        Location = $_.Subject.L
+                        Organisation = $_.Subject.O
+                        SubjectAlternateName = $_.SANs
+                        CSRDirectory = $csrDir
+                    }
+                    New-CertificateSigninfRequest @Parameters
                 }
             }
         }
