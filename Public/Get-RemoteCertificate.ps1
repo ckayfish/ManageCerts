@@ -23,59 +23,61 @@ PS C:/> Get-RemoteCertificate -Hostname mydomain.com -Port 8443
 function Get-RemoteCertificate {
     param (
         # The hostname(s) to probe.
-        [Parameter(Mandatory)][string[]]$HostName,
+        [Parameter(Mandatory,ValueFromPipeline)][string[]]$HostName,
         # TCP port the webserver(s) respond on.
         [int]$Port = 443,
         # The security protocols to use for retrieving the certificate.
         [SecurityProtocolType]$SecurityProtocols = 'Tls, Tls12'
     )
 
-    foreach($Name in $HostName){
-        $Name = $Name.ToLower()
-        try {
-            $Addresses = [Dns]::GetHostAddresses($Name)
-            $TcpClient = [TcpClient]::new()
-            $TcpClient.Connect($Name, $Port)
-
-            $SslStream = [SslStream]::new($TcpClient.GetStream(), $true, {
-                param($send, $cert, $chain, $errs)
-                return $true
-            })
-            $SslStream.AuthenticateAsClient($Name, $null, $SecurityProtocols, $false)
-
-            [X509Certificate2]$Certificate = $SslStream.RemoteCertificate
-            if(!$Certificate){
-                return [pscustomobject]@{
-                    CommonName = $Name
-                    ResolvedAddresses = $Addresses
-                    ValidFrom = $null
-                    ValidTo = $null
-                    ValidToString = $null
-                    SANs = @()
-                    Subject = @{}
+    process {
+        foreach($Name in $HostName){
+            $Name = $Name.ToLower()
+            try {
+                $Addresses = [Dns]::GetHostAddresses($Name)
+                $TcpClient = [TcpClient]::new()
+                $TcpClient.Connect($Name, $Port)
+    
+                $SslStream = [SslStream]::new($TcpClient.GetStream(), $true, {
+                    param($send, $cert, $chain, $errs)
+                    return $true
+                })
+                $SslStream.AuthenticateAsClient($Name, $null, $SecurityProtocols, $false)
+    
+                [X509Certificate2]$Certificate = $SslStream.RemoteCertificate
+                if(!$Certificate){
+                    return [pscustomobject]@{
+                        CommonName = $Name
+                        ResolvedAddresses = $Addresses
+                        ValidFrom = $null
+                        ValidTo = $null
+                        ValidToString = $null
+                        SANs = @()
+                        Subject = @{}
+                    }
                 }
+    
+                $Subject = Get-CertificateSubject -Subject $Certificate.Subject
+                [pscustomobject]@{
+                    CommonName = $Name
+                    Country = $Subject.C
+                    State = $Subject.S
+                    Location = $Subject.L
+                    Organisation = $Subject.O
+                    SANs = $Certificate.DnsNameList | Where-Object { $_ -ne $Name -and $_ -ne "www.$Name" }
+    
+                    ResolvedAddresses = $Addresses
+                    ValidFrom = $Certificate.NotBefore
+                    ValidTo = $Certificate.NotAfter
+                    ValidToString = $Certificate.NotAfter.ToString('yyyy-MM-dd')
+                    ExpiresIn = $Certificate.NotAfter - [datetime]::Now
+                }
+            } catch {
+                throw
+            } finally {
+                if($SslStream){ $SslStream.Dispose() }
+                if($TcpClient){ $TcpClient.Dispose() }
             }
-
-            $Subject = Get-CertificateSubject -Subject $Certificate.Subject
-            [pscustomobject]@{
-                CommonName = $Name
-                Country = $Subject.C
-                State = $Subject.S
-                Location = $Subject.L
-                Organisation = $Subject.O
-                SANs = $Certificate.DnsNameList | Where-Object { $_ -ne $Name -and $_ -ne "www.$Name" }
-
-                ResolvedAddresses = $Addresses
-                ValidFrom = $Certificate.NotBefore
-                ValidTo = $Certificate.NotAfter
-                ValidToString = $Certificate.NotAfter.ToString('yyyy-MM-dd')
-                ExpiresIn = $Certificate.NotAfter - [datetime]::Now
-            }
-        } catch {
-            throw
-        } finally {
-            if($SslStream){ $SslStream.Dispose() }
-            if($TcpClient){ $TcpClient.Dispose() }
         }
     }
 }

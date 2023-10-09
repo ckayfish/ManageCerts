@@ -39,7 +39,7 @@ function New-CertificateSigningRequest {
         # Array of Subject Alternate Names
         [Parameter(ValueFromPipelineByPropertyName)][Alias('SANs')][string[]]$SubjectAlternateName,
         # Output directory for key and cert files.
-        [ValidateNotNullOrEmpty()][string]$CSRDirectory = "$PSScriptRoot/../CSRsInProgress", # you may want to change this to just "./CSRsInProgress" and have it dump to a subdirectory of the working directory
+        [ValidateNotNullOrEmpty()][string]$CSRDirectory = "./CSRsInProgress",
         # Force generating new CSR files (deletes clobbered paths).
         [switch]$Force
     )
