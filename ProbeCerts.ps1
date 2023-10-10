@@ -1,68 +1,80 @@
 <#
-   .SYNOPSIS
-     Collects SSL cert details from realtime probes, and optionally creates CSRs if they expire within X days
-   .EXAMPLE
-     ProbeCerts -hosts "google.ca,reddit.com" -gencsr
-     This command will do a web request to google.ca & reddit.com to collect their certificate
-     details, then generate a JSON output file of desired information. Since -gencsr is selected, create
-     a CSR if it expires is less than default number of days. Use -daysleft to specify 
- #>
+Some alternatives to this script using the new more powerful Get-RemoteCertificate
+and New-CertificateSigningRequest:
+
+Instead of ProbeCerts.ps1 -Host "google.com, reddit.com" -JsonOutFile $JsonPath:
+
+    Get-RemoteCertificate google.com, reddit.com | ConvertTo-Json > $JsonPath
+
+Instead of ProbeCerts.ps1 -HostFile "hosts.txt" -gencsr
+
+    Get-Content hosts.txt |
+        Get-RemoteCertificate |
+        Where-Object ExpiresIn -lt '30.0:0' |
+        New-CertificateSigningRequest
+
+Instead of ProbeCerts.ps1 -Hosts google.com -JsonOutfile $JsonPath -gencsr
+
+    $Certs = Get-RemoteCertificate google.com
+    $Certs | ConvertTo-Json > $JsonPath
+    $Certs | Where-Object ExpiresIn -lt '30.0:0' | New-CertificateSigningRequest
+#>
+<#
+    .SYNOPSIS
+        Collects SSL cert details from realtime probes, and optionally creates CSRs if they expire within X days
+    .EXAMPLE
+        ProbeCerts -hosts "google.ca,reddit.com" -gencsr
+        This command will do a web request to google.ca & reddit.com to collect their certificate
+        details, then generate a JSON output file of desired information. Since -gencsr is selected, create
+        a CSR if it expires is less than default number of days. Use -daysleft to specify 
+    #>
+[CmdletBinding(DefaultParameterSetName='ByHosts')]
 param (
-    [string]$hosts,
-    [string]$hostfile = ".\hostfile.txt",
-    [string]$jsonOutFile = ".\logs\certDetails-$((Get-Date -format "yyyyMMddhhmmss")).json",
-    [string]$csvOutFile = ".\logs\certDetails-$((Get-Date -format "yyyyMMddhhmmss")).csv",
+    [Parameter(ParameterSetName='ByHosts')][string[]]$Hosts,
+    [Parameter(ParameterSetName='ByFile')][string]$HostFile,
+    [string]$JsonOutFile = ".\logs\certDetails-$(Get-Date -format "yyyyMMddhhmmss").json",
     [switch]$gencsr,
-    [int]$daysleft = 30,
+    [int]$DaysLeft = 30,
     [string]$csrDir = ".\csrsInProgress"
 )
 
-#Import modules, set path, announce execution, initiate important objects
-Import-Module .\CertsModule\CertsModule.psm1 -Force
-$MyInvocation.MyCommand.Path | Split-Path | Push-Location # Set path to script folder
+Import-Module '.\ManageCerts.psd1' -Force
 Write-Host "Execution Path: $(Get-Location)"
 Write-Host "Starting script: $($MyInvocation.MyCommand.Name)"
-$allCerts = New-Object System.Collections.Generic.List[psobject]
 
-# First get the certificate details into a list of objects
-# Could be for single host or many listed in a file with each host on a seperarte line
-if ($hosts) {
-    Write-Host "Using hosts defined in CLI"
-    $hosts.Replace(" ","") -Split(",") | ForEach-Object {
-        Write-Host "Probing Certificate: $_"
-        $allCerts.Add($(ProbeCert $_))
+try {
+    $csrDir = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath("$PSScriptRoot/$csrDir")
+    if($HostFile){
+        Write-Verbose "Reading hosts from file: $HostFile"
+        $Hosts = Get-Content -Path $HostFile -ErrorAction Stop |
+            Where-Object { $_ -and $_ -notlike '#*' } |
+            ForEach-Object Trim
+    } elseif($Hosts.Count -eq 1 -and $Hosts[0] -like '*,*'){
+        Write-Verbose "Hosts appears to be a comma-separated string, splitting."
+        $Hosts = $Hosts[0] -split ',' | ForEach-Object Trim
     }
-} else {
-    Write-Host "No hostname declared, using hostfile '$hostfile'"
-    if (Test-Path -Path $hostfile -PathType Leaf) {
-        Get-Content -Path $hostfile | ForEach-Object {
-            $thisHost = $_ -replace '\s',''
-            Write-Host "Probing Certificate: $thisHost"
-            $allCerts.Add($(ProbeCert $thisHost))
-        }
-    } else {
-        Write-Host "Error: `"$hostfile`" not found at $(Get-Location)"
-        Write-Host
-        exit 1
-    }
-}
-$allCerts | Format-Table
 
-Write-Host "Creating JSON of all certificates probed: '$jsonOutFile'"
-$allCerts | Sort-Object -Property validTo | ConvertTo-Json  |  New-Item -Path $jsonOutFile -Force | Out-Null
-# $allCerts | Export-Csv -Path $csvOutFile -NoTypeInformation
+    Write-Host "Creating JSON of all certificates probed: '$jsonOutFile'"
+    $AllCertificates = Get-RemoteCertificate -HostName $Hosts
+    $AllCertificates | Format-Table
+    $null = $AllCertificates |
+        Sort-Object -Property ValidTo |
+        ConvertTo-Json |
+        New-Item -Path $JsonOutFile -Force
 
-#If selected, generate Certificate Signing Requests for certs expiring in X days
-if ($gencsr){
-    Write-Host "Looking for certs ready for renewal..."
-    $allCerts | ForEach-Object {
-        if (!($_.cn -eq $null)) {
-            if ((Get-Date).AddDays($daysleft) -gt $_.validTo  ) {
-                Write-Host "The certificate for $($_.cn) expires in $(($_.validTo - (Get-Date)).Days) days."
-                # Check function parameters in module file to ensure you are passing in the right order
-                # Should be: Common Name, Country (2 letter code), State, Location, Organisation, and array of SAN's
-                CreateCsr $_.cn $_.subject.C  $_.subject.S $_.subject.L $($_.subject.O -replace ('"','\"')) $($_.sans) $csrDir
-            }
-        }
+    #If selected, generate Certificate Signing Requests for certs expiring in X days
+    if($gencsr){
+        $TimeRemaining = New-TimeSpan -Days $DaysLeft
+        $AllCertificates |
+            Where-Object ExpiresIn -lt $TimeRemaining |
+            ForEach-Object {
+                Write-Host "The certificate for $($_.CommonName) expires in $($_.ExpiresIn.Days) days."
+                $_
+            } |
+            New-CertificateSigningRequest -CSRDirectory $csrDir
     }
+} catch {
+    throw
+} finally {
+    Pop-Location
 }
