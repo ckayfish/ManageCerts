@@ -2,7 +2,7 @@ using namespace System.Management.Automation
 
 <#
 .SYNOPSIS
-Creates a CSR and Private Ket for a new-new server certificate using OpenSSL.
+Creates a CSR and Private Key for for an SSL/TLS Server Certificate.
 
 .DESCRIPTION
 This command will create a CSR and private key for the hostname (-cn) provided. It will use
@@ -58,7 +58,7 @@ function New-CertificateSigningRequest {
         # Generate CSR/Key output directory if it doesn't exist.
         if(!(Test-Path -LiteralPath $CSRDirectory -PathType Container)){
             Write-Verbose "Folder ""$CSRDirectory"" does not exist, creating now."
-            $null = New-Item -ItemType Directory -LiteralPath $CSRDirectory
+            $null = New-Item -ItemType Directory -Path $CSRDirectory
         }
     }
 

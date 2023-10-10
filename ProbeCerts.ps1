@@ -31,7 +31,7 @@ Instead of ProbeCerts.ps1 -Hosts google.com -JsonOutfile $JsonPath -gencsr
 [CmdletBinding(DefaultParameterSetName='ByHosts')]
 param (
     [Parameter(ParameterSetName='ByHosts')][string[]]$Hosts,
-    [Parameter(ParameterSetName='ByFile')][string]$HostFile = '.\hostfile.txt',
+    [Parameter(ParameterSetName='ByFile')][string]$HostFile,
     [string]$JsonOutFile = ".\logs\certDetails-$(Get-Date -format "yyyyMMddhhmmss").json",
     [switch]$gencsr,
     [int]$DaysLeft = 30,
