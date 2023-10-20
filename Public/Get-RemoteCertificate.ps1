@@ -5,12 +5,11 @@ using namespace System.Security.Cryptography.X509Certificates
 
 <#
 .SYNOPSIS
-Probe a certificate and return a object of class Cert.
+Probe a certificate and return a PSCustomObject hash.
 
 .DESCRIPTION
-Probe a certificate and return a object of class Cert. Takes a required hostname and optional Port,
-completes a TCP level request to get the cert, adds the desired details to a cutom Class (systemObject),
-and returns that object.
+Probe a certificate and return a PSCustomObject hash table. Takes a (required) hostname and optional Port,
+completes a TCP level request to get the certificate, and returns the object.
 
 .EXAMPLE
 Get the certificate hosted at the address github.com on port 443
@@ -62,7 +61,7 @@ function Get-RemoteCertificate {
                     CommonName = $Name
                     Country = $Subject.C
                     State = $Subject.S
-                    Location = $Subject.L
+                    Locality = $Subject.L
                     Organisation = $Subject.O
                     SANs = $Certificate.DnsNameList | Where-Object { $_ -ne $Name -and $_ -ne "www.$Name" }
     

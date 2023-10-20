@@ -4,9 +4,11 @@
 # https://github.com/ckayfish/ManageCerts
 #
 ##################################################################################
-# Requires PoSH -Version 5.1
-$Functions= @( Get-ChildItem -Path $PSScriptRoot\Private\*.ps1 -ErrorAction SilentlyContinue )
-$Functions= $Functions + @( Get-ChildItem -Path $PSScriptRoot\Public\*.ps1 -ErrorAction SilentlyContinue )
+# Requires PoSH -Version 5.1+
+# TODO Confirm which PoSH versions support or not
+
+$Functions = @( Get-ChildItem -Path $PSScriptRoot\Private\*.ps1 -ErrorAction SilentlyContinue )
+$Functions = $Functions + @( Get-ChildItem -Path $PSScriptRoot\Public\*.ps1 -ErrorAction SilentlyContinue )
 
 # Dot Source the files
 Foreach($Import in @($Functions)) {
