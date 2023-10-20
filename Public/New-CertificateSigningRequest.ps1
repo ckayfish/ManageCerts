@@ -5,8 +5,8 @@ using namespace System.Management.Automation
 Creates a CSR and Private Key for for an SSL/TLS Server Certificate.
 
 .DESCRIPTION
-This command will create a CSR and private key for the hostname (-cn) provided. It will use
-the default Country, State/Province, Location/City, and organization if not specified. The
+This command will create a CSR and private key for the CommonName (cn) provided. It will use
+the default Country, State/Province, Locality/City, and organization if not specified. The
 Subject Alternate Names (-SubjectAlternateName) can be passed as a comma-separated string
 
 ```powershell
@@ -20,7 +20,7 @@ or as an array of strings
 ```
 
 .EXAMPLE
-Create a new CSR for "mynewwebsite.com", outputting to the default directory "CSRsInProgress" at the root of the module.
+Create a new CSR and key file for "mynewwebsite.com" in the default directory "CSRsInProgress" at the root of the module.
 PS C:\> New-CertificateSigningRequest -CommonName mynewwebsite.com
 #>
 function New-CertificateSigningRequest {
@@ -33,13 +33,13 @@ function New-CertificateSigningRequest {
         # State/Province.
         [Parameter(ValueFromPipelineByPropertyName)][string]$State,
         # The city or other location.
-        [Parameter(ValueFromPipelineByPropertyName)][string]$Location,
+        [Parameter(ValueFromPipelineByPropertyName)][string]$Locality,
         # Organisation, company, affiliation.
         [Parameter(ValueFromPipelineByPropertyName)][string]$Organisation,
         # Array of Subject Alternate Names
         [Parameter(ValueFromPipelineByPropertyName)][Alias('SANs')][string[]]$SubjectAlternateName,
         # Output directory for key and cert files.
-        [ValidateNotNullOrEmpty()][string]$CSRDirectory = "./CSRsInProgress",
+        [ValidateNotNullOrEmpty()][string]$CSRDirectory = "./CsrsInProgress",
         # Force generating new CSR files (deletes clobbered paths).
         [switch]$Force
     )
@@ -82,7 +82,7 @@ function New-CertificateSigningRequest {
                     }
                     Write-Verbose "CSR and/or private key removed. Creating new CSR and private key..."
                 } else {
-                    Write-Warning "CSR and/or Key file(s) already exist. Please delete or move them before recreating."
+                    Write-Warning "CSR and/or Key file(s) already exist. Please delete or move them before recreating, or use -Force to overwrite"
                     Write-Warning "CSR: File $CSRFilePath"
                     Write-Warning "Key: File $KeyFilePath"
                     return
@@ -93,7 +93,7 @@ function New-CertificateSigningRequest {
     
             $OpenSSLArguments = @(
                 "req -nodes -newkey rsa:2048 -keyout ""$KeyFilePath"" -out ""$CSRFilePath"""
-                "-subj ""/CN=$CommonName/C=$Country/ST=$State/L=$Location/O=$Organisation"""
+                "-subj ""/CN=$CommonName/C=$Country/ST=$State/L=$Locality/O=$Organisation"""
                 if($SubjectAlternateName){
                     "-addext ""subjectAltName = $($SubjectAlternateName -replace '^', 'DNS:' -join ',')"""
                 }
