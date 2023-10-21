@@ -19,6 +19,14 @@ Instead of ProbeCerts.ps1 -Hosts google.com -JsonOutfile $JsonPath -gencsr
     $Certs = Get-RemoteCertificate google.com
     $Certs | ConvertTo-Json > $JsonPath
     $Certs | Where-Object ExpiresIn -lt '30.0:0' | New-CertificateSigningRequest
+
+Other Example commands that could be used instead of this script
+
+    Get-Content .\hostfiles\myhosts.txt |
+    Where-Object { $_ -and $_ -notlike '#*' } |
+    Get-RemoteCertificate |
+    Sort-Object -Property ExpiresIn | 
+    ConvertTo-Json | Out-File .\log\myCerts.json
 #>
 
 <#

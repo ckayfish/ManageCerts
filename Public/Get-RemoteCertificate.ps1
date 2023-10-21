@@ -26,7 +26,7 @@ function Get-RemoteCertificate {
         # TCP port the webserver(s) respond on.
         [int]$Port = 443,
         # The security protocols to use for retrieving the certificate.
-        [SecurityProtocolType]$SecurityProtocols = 'Tls, Tls12'
+        [SecurityProtocolType]$SecurityProtocols = 'Tls, Tls12, Tls13'
     )
 
     process {
@@ -58,13 +58,13 @@ function Get-RemoteCertificate {
     
                 $Subject = Get-CertificateSubject -Subject $Certificate.Subject
                 [pscustomobject]@{
-                    CommonName = $Name
+                    NameProbed = $Name
+                    CommonName = $Subject.CN
                     Country = $Subject.C
                     State = $Subject.S
                     Locality = $Subject.L
                     Organisation = $Subject.O
-                    SANs = $Certificate.DnsNameList | Where-Object { $_ -ne $Name -and $_ -ne "www.$Name" }
-    
+                    SANs = $Certificate.DnsNameList | Where-Object { $_ -ne $Subject.CN -and $_ -ne "www.$($Subject.CN)" }    
                     ResolvedAddresses = $Addresses
                     ValidFrom = $Certificate.NotBefore
                     ValidTo = $Certificate.NotAfter
@@ -72,6 +72,7 @@ function Get-RemoteCertificate {
                     ExpiresIn = $Certificate.NotAfter - [datetime]::Now
                 }
             } catch {
+                Write-Error -Message "$name"
                 throw
             } finally {
                 if($SslStream){ $SslStream.Dispose() }
