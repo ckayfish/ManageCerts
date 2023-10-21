@@ -46,25 +46,26 @@ function Get-RemoteCertificate {
                 [X509Certificate2]$Certificate = $SslStream.RemoteCertificate
                 if(!$Certificate){
                     return [pscustomobject]@{
-                        CommonName = $Name
+                        NameProbed = $Name
+                        Subject = @{}
                         ResolvedAddresses = $Addresses
                         ValidFrom = $null
                         ValidTo = $null
                         ValidToString = $null
                         SANs = @()
-                        Subject = @{}
                     }
                 }
     
                 $Subject = Get-CertificateSubject -Subject $Certificate.Subject
                 [pscustomobject]@{
                     NameProbed = $Name
-                    CommonName = $Subject.CN
+                    Subject = $Subject
                     Country = $Subject.C
                     State = $Subject.S
                     Locality = $Subject.L
                     Organisation = $Subject.O
-                    SANs = $Certificate.DnsNameList | Where-Object { $_ -ne $Subject.CN -and $_ -ne "www.$($Subject.CN)" }    
+                    CommonName = $Subject.CN
+                    SANs = $Certificate.DnsNameList # | Where-Object { $_ -ne $Subject.CN -and $_ -ne "www.$($Subject.CN)" }    
                     ResolvedAddresses = $Addresses
                     ValidFrom = $Certificate.NotBefore
                     ValidTo = $Certificate.NotAfter
@@ -72,7 +73,7 @@ function Get-RemoteCertificate {
                     ExpiresIn = $Certificate.NotAfter - [datetime]::Now
                 }
             } catch {
-                Write-Error -Message "$name"
+                Write-Error -Message "Error probing $name"
                 throw
             } finally {
                 if($SslStream){ $SslStream.Dispose() }

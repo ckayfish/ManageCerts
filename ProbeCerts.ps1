@@ -3,7 +3,7 @@ Alternatives to this script calling the module functions directly, including:
  *Get-RemoteCertificate
  *New-CertificateSigningRequest:
 
-Instead of ProbeCerts.ps1 -Host "google.com, reddit.com" -JsonOutFile $JsonPath:
+Instead of ProbeCerts.ps1 -Host "google.com, reddit.com" -JsonOutFile $JsonPath
 
     Get-RemoteCertificate google.com, reddit.com | ConvertTo-Json > $JsonPath
 
@@ -20,13 +20,21 @@ Instead of ProbeCerts.ps1 -Hosts google.com -JsonOutfile $JsonPath -gencsr
     $Certs | ConvertTo-Json > $JsonPath
     $Certs | Where-Object ExpiresIn -lt '30.0:0' | New-CertificateSigningRequest
 
-Other Example commands that could be used instead of this script
+Another example that could be used instead of this script. Ignore blank lines and those containing a '#', sort by Expiry
 
     Get-Content .\hostfiles\myhosts.txt |
     Where-Object { $_ -and $_ -notlike '#*' } |
     Get-RemoteCertificate |
     Sort-Object -Property ExpiresIn | 
     ConvertTo-Json | Out-File .\log\myCerts.json
+
+Find items in file where the name being probed does not match the Subject CommonName (likely meaning you are probing a SAN)
+
+    Get-Content .\hostfiles\myhosts.txt |
+    Where-Object { $_ -and $_ -notlike '#*' } |
+    Get-RemoteCertificate |
+    Where-Object { $_.NameProbed -ne $_.CommonName } |
+    ConvertTo-Json | Out-File .\logs\probingSAN.json
 #>
 
 <#
